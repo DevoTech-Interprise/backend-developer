@@ -24,6 +24,14 @@
       "dest": "/api/profile.ts"
     },
     {
+      "src": "/api/auth/verify",
+      "dest": "/api/verify.ts"
+    },
+    {
+      "src": "/api/auth/refresh",
+      "dest": "/api/refresh.ts"
+    },
+    {
       "src": "/api/users/me",
       "dest": "/api/users/me.ts"
     },
