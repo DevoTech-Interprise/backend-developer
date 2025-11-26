@@ -46,6 +46,6 @@ backend/<br/>
 │ └── routes/ # Definição das rotas <br/>
 ├── api/ <br/>
 │ └── index.ts # Todas as rotas de autenticação (Vercel) <br/>
-│ └── index.ts # Todas as rotas de usuarios (Vercel) <br/>
+│ └── users.ts # Todas as rotas de usuarios (Vercel) <br/>
 ├── package.json <br/>
 └── vercel.json
