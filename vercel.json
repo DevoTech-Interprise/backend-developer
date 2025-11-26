@@ -4,10 +4,6 @@
     {
       "src": "api/*.ts",
       "use": "@vercel/node"
-    },
-    {
-      "src": "api/users/*.ts",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -33,15 +29,29 @@
     },
     {
       "src": "/api/users/me",
-      "dest": "/api/users/me.ts"
-    },
-    {
-      "src": "/api/users/(.*)",
-      "dest": "/api/users/[id].ts"
+      "dest": "/api/users-me.ts"
     },
     {
       "src": "/api/users",
-      "dest": "/api/users.ts"
+      "dest": "/api/users-get.ts"
+    },
+    {
+      "src": "/api/users/(.*)/promote",
+      "dest": "/api/users-promote.ts"
+    },
+    {
+      "src": "/api/users/(.*)",
+      "dest": "/api/users-id-get.ts"
+    },
+    {
+      "src": "/api/users/(.*)",
+      "dest": "/api/users-id-put.ts",
+      "methods": ["PUT"]
+    },
+    {
+      "src": "/api/users/(.*)",
+      "dest": "/api/users-id-delete.ts",
+      "methods": ["DELETE"]
     },
     {
       "src": "/api",
