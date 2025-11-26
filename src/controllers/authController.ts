@@ -53,11 +53,11 @@ export class AuthController {
       // Hash da senha
       const hashedPassword = await bcrypt.hash(password, 12);
 
-      // Inserir usuário
+      // Inserir usuário (role padrão é 'user')
       const result = await pool.query(
-        `INSERT INTO users (email, password, name) 
-         VALUES ($1, $2, $3) 
-         RETURNING id, email, name, created_at`,
+        `INSERT INTO users (email, password, name, role) 
+         VALUES ($1, $2, $3, 'user') 
+         RETURNING id, email, name, role, created_at`,
         [email.toLowerCase(), hashedPassword, name]
       );
 
@@ -69,11 +69,12 @@ export class AuthController {
         return res.status(500).json({ error: 'Erro de configuração do servidor' });
       }
 
-      // CORREÇÃO: Converter userId para número no token
+      // Incluir role no token
       const token = jwt.sign(
         { 
-          userId: parseInt(user.id), // ← CONVERTIDO para número
-          email: user.email 
+          userId: parseInt(user.id),
+          email: user.email,
+          role: user.role // ← NOVO: incluir role no token
         },
         JWT_SECRET,
         { expiresIn: '7d' }
@@ -84,6 +85,7 @@ export class AuthController {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role, // ← NOVO: incluir role na resposta
         created_at: formatToBrasilia(user.created_at),
         created_at_iso: user.created_at
       };
@@ -97,8 +99,7 @@ export class AuthController {
     } catch (error: any) {
       console.error('Erro no registro:', error);
       
-      // Tratamento de erros específicos do PostgreSQL
-      if (error.code === '23505') { // Violação de unique constraint
+      if (error.code === '23505') {
         return res.status(400).json({ error: 'Email já está em uso' });
       }
       
@@ -110,12 +111,10 @@ export class AuthController {
     try {
       const { email, password } = req.body;
 
-      // Validações
       if (!email || !password) {
         return res.status(400).json({ error: 'Email e senha são obrigatórios' });
       }
 
-      // Verificar JWT_SECRET primeiro
       if (!JWT_SECRET) {
         console.error('❌ JWT_SECRET não configurada na Vercel');
         return res.status(500).json({ 
@@ -124,7 +123,7 @@ export class AuthController {
         });
       }
 
-      // Buscar usuário
+      // Buscar usuário incluindo role
       const result = await pool.query(
         'SELECT * FROM users WHERE email = $1',
         [email.toLowerCase()]
@@ -143,11 +142,12 @@ export class AuthController {
         return res.status(401).json({ error: 'Credenciais inválidas' });
       }
 
-      // CORREÇÃO: Converter userId para número no token
+      // Incluir role no token
       const token = jwt.sign(
         { 
-          userId: parseInt(user.id), // ← CONVERTIDO para número
-          email: user.email 
+          userId: parseInt(user.id),
+          email: user.email,
+          role: user.role // ← NOVO: incluir role no token
         },
         JWT_SECRET,
         { expiresIn: '7d' }
@@ -158,6 +158,7 @@ export class AuthController {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role, // ← NOVO: incluir role na resposta
         created_at: formatToBrasilia(user.created_at)
       };
 
@@ -175,18 +176,15 @@ export class AuthController {
 
   static async getProfile(req: Request, res: Response) {
     try {
-      // Verificar JWT_SECRET
       if (!JWT_SECRET) {
         return res.status(500).json({ error: 'Erro de configuração do servidor' });
       }
 
       const userId = (req as any).user.userId;
-
-      // CORREÇÃO: Garantir que o ID é tratado como número na query
       const userIdNum = parseInt(userId);
 
       const result = await pool.query(
-        'SELECT id, email, name, created_at, updated_at FROM users WHERE id = $1',
+        'SELECT id, email, name, role, created_at, updated_at FROM users WHERE id = $1',
         [userIdNum]
       );
 
@@ -196,11 +194,11 @@ export class AuthController {
 
       const user = result.rows[0];
       
-      // Formatar datas para resposta
       const userResponse = {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role, // ← NOVO: incluir role na resposta
         created_at: formatToBrasilia(user.created_at),
         updated_at: user.updated_at ? formatToBrasilia(user.updated_at) : null
       };
