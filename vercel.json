@@ -2,62 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/*.ts",
+      "src": "api/[...all].ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api/auth/register",
-      "dest": "/api/register.ts"
-    },
-    {
-      "src": "/api/auth/login",
-      "dest": "/api/login.ts"
-    },
-    {
-      "src": "/api/auth/profile",
-      "dest": "/api/profile.ts"
-    },
-    {
-      "src": "/api/auth/verify",
-      "dest": "/api/verify.ts"
-    },
-    {
-      "src": "/api/auth/refresh",
-      "dest": "/api/refresh.ts"
-    },
-    {
-      "src": "/api/users-list",
-      "dest": "/api/users-list.ts"
-    },
-    {
-      "src": "/api/users-me",
-      "dest": "/api/users-me.ts"
-    },
-    {
-      "src": "/api/users-get",
-      "dest": "/api/users-get.ts"
-    },
-    {
-      "src": "/api/users-update",
-      "dest": "/api/users-update.ts"
-    },
-    {
-      "src": "/api/users-delete",
-      "dest": "/api/users-delete.ts"
-    },
-    {
-      "src": "/api/users-promote",
-      "dest": "/api/users-promote.ts"
-    },
-    {
-      "src": "/api",
-      "dest": "/api/index.ts"
-    },
-    {
-      "src": "/",
-      "dest": "/api/index.ts"
+      "src": "/(.*)",
+      "dest": "/api/[...all]"
     }
   ]
 }
