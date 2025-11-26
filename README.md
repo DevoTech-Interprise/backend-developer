@@ -1,6 +1,3 @@
-📚 DOCUMENTAÇÃO COMPLETA DA API DE AUTENTICAÇÃO
-🔐 Node.js + TypeScript + PostgreSQL + Vercel
-
 ================================================================================
 📁 README.md - DOCUMENTAÇÃO DO PROJETO
 ================================================================================
