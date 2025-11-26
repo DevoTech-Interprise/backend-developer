@@ -32,14 +32,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  // Extrair ID da URL
-  const urlParts = req.url?.split('/').filter(part => part.length > 0);
-  const id = urlParts && urlParts.length > 0 ? urlParts[urlParts.length - 2] : undefined; // /users/1/promote
+  const { id } = req.query;
 
-  console.log('🔍 Debug users-promote:', { url: req.url, id });
+  console.log('🔍 Debug users-promote:', { id, query: req.query });
 
-  if (!id) {
-    return res.status(400).json({ error: 'ID do usuário não fornecido' });
+  if (!id || Array.isArray(id)) {
+    return res.status(400).json({ error: 'ID do usuário não fornecido ou inválido' });
   }
 
   if (req.method === 'PATCH') {
