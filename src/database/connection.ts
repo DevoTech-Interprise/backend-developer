@@ -3,30 +3,52 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configuração para desenvolvimento local
+// Configuração específica para Neon.tech
 export const pool = new Pool({
-  user: process.env.DB_USER || 'auth_user',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'auth_db',
-  password: process.env.DB_PASSWORD || 'auth_password',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  ssl: false,
+  connectionString: process.env.DATABASE_URL,
+  // Neon requer SSL
+  ssl: {
+    rejectUnauthorized: false
+  },
+  // Configurações otimizadas para Neon
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 });
 
-// Testar conexão
 export const testConnection = async () => {
   let client;
   try {
-    client = await pool.connect();
-    console.log('✅ Conectado ao PostgreSQL com sucesso!');
+    console.log('🔌 Tentando conectar com:', process.env.DATABASE_URL?.split('@')[1]?.split('/')[0]);
     
-    // Teste adicional: fazer uma query simples
-    const result = await client.query('SELECT version()');
-    console.log('📋 Versão do PostgreSQL:', result.rows[0].version);
+    client = await pool.connect();
+    console.log('✅ Conectado ao Neon Postgres!');
+    
+    // Teste específico para verificar tabelas
+    const tables = await client.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+    `);
+    
+    console.log('📊 Tabelas encontradas:', tables.rows.map(t => t.table_name));
     
     return true;
   } catch (error: any) {
-    console.error('❌ Erro detalhado da conexão:', error.message);
+    console.error('❌ Erro detalhado:');
+    console.error('   Mensagem:', error.message);
+    console.error('   Código:', error.code);
+    
+    if (error.message.includes('SSL')) {
+      console.error('   💡 SSL não configurado');
+    }
+    if (error.message.includes('password')) {
+      console.error('   💡 Erro de autenticação');
+    }
+    if (error.message.includes('does not exist')) {
+      console.error('   💡 Banco não existe');
+    }
+    
     return false;
   } finally {
     if (client) client.release();
