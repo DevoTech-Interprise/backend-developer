@@ -49,7 +49,8 @@ backend/ <br/>
 │   ├── middleware/      # Auth e permissions <br/>
 │   └── routes/          # Definição das rotas <br/>
 ├── api/ <br/>
-│   └── index.ts         # Todas as rotas (Vercel) <br/>
+│   └── index.ts         # Todas as rotas de auth (Vercel) <br/>
+│   └── users.ts         # Todas as rotas de users (Vercel) <br/>
 ├── package.json <br/>
 └── vercel.json
 
