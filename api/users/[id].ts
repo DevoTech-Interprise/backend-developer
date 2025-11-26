@@ -38,7 +38,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  const { id } = req.query;
+  // CORREÇÃO: Pegar o ID da URL corretamente
+  const urlParts = req.url?.split('/').filter(part => part.length > 0);
+  const id = urlParts && urlParts.length > 0 ? urlParts[urlParts.length - 1] : undefined;
+
+  console.log('🔍 Debug [id].ts:', { 
+    url: req.url, 
+    urlParts, 
+    id,
+    query: req.query 
+  });
+
+  if (!id) {
+    return res.status(400).json({ error: 'ID do usuário não fornecido' });
+  }
 
   try {
     // Obter usuário por ID
