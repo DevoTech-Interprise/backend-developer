@@ -16,9 +16,5 @@
       "dest": "/api/$1"
     }
   ],
-  "functions": {
-    "api/**/*.ts": {
-      "maxDuration": 30
-    }
-  }
+  "buildCommand": "npm run vercel-build"
 }
