@@ -39,7 +39,7 @@ Uma API completa de autenticação e gerenciamento de usuários com sistema de r
 ## 🏗️ Estrutura do Projeto
 
 backend/
-├── src/
+├── src/ <br/>
 │ ├── controllers/ # Lógica das rotas
 │ ├── database/ # Conexão com PostgreSQL
 │ ├── middleware/ # Auth e permissions
