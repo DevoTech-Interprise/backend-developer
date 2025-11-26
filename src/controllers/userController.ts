@@ -96,6 +96,8 @@ export class UserController {
       const { name, email, password } = req.body;
       const userId = (req as any).user.userId;
 
+      console.log('🔍 Debug updateUser:', { id, userId, typeId: typeof id, typeUserId: typeof userId });
+
       // Verificar se usuário existe
       const userExists = await pool.query(
         'SELECT id FROM users WHERE id = $1',
@@ -106,9 +108,18 @@ export class UserController {
         return res.status(404).json({ error: 'Usuário não encontrado' });
       }
 
+      // CORREÇÃO: Converter ambos para número para comparação
+      const userIdNum = parseInt(userId);
+      const idNum = parseInt(id);
+
+      console.log('🔍 Debug após conversão:', { idNum, userIdNum });
+
       // Verificar se o usuário tem permissão (só pode editar próprio perfil)
-      if (parseInt(id) !== userId) {
-        return res.status(403).json({ error: 'Sem permissão para editar este usuário' });
+      if (idNum !== userIdNum) {
+        return res.status(403).json({ 
+          error: 'Sem permissão para editar este usuário',
+          details: `Você só pode editar seu próprio perfil (ID: ${userIdNum})`
+        });
       }
 
       // Preparar campos para atualização
@@ -201,9 +212,16 @@ export class UserController {
         return res.status(404).json({ error: 'Usuário não encontrado' });
       }
 
+      // CORREÇÃO: Converter ambos para número para comparação
+      const userIdNum = parseInt(userId);
+      const idNum = parseInt(id);
+
       // Verificar se o usuário tem permissão (só pode deletar próprio perfil)
-      if (parseInt(id) !== userId) {
-        return res.status(403).json({ error: 'Sem permissão para deletar este usuário' });
+      if (idNum !== userIdNum) {
+        return res.status(403).json({ 
+          error: 'Sem permissão para deletar este usuário',
+          details: `Você só pode deletar seu próprio perfil (ID: ${userIdNum})`
+        });
       }
 
       await pool.query('DELETE FROM users WHERE id = $1', [id]);
@@ -221,11 +239,14 @@ export class UserController {
     try {
       const userId = (req as any).user.userId;
 
+      // CORREÇÃO: Garantir que o ID é tratado como número
+      const userIdNum = parseInt(userId);
+
       const result = await pool.query(
         `SELECT id, email, name, created_at, updated_at 
          FROM users 
          WHERE id = $1`,
-        [userId]
+        [userIdNum]
       );
 
       if (result.rows.length === 0) {
