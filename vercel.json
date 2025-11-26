@@ -16,7 +16,15 @@
       "dest": "/api/users.ts"
     },
     {
-      "src": "/api/(.*)",
+      "src": "/api/users",
+      "dest": "/api/users.ts"
+    },
+    {
+      "src": "/api/auth/(.*)",
+      "dest": "/api/index.ts"
+    },
+    {
+      "src": "/api",
       "dest": "/api/index.ts"
     },
     {
