@@ -4,6 +4,10 @@
     {
       "src": "api/*.ts",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/users/*.ts",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -18,6 +22,18 @@
     {
       "src": "/api/auth/profile",
       "dest": "/api/profile.ts"
+    },
+    {
+      "src": "/api/users/me",
+      "dest": "/api/users/me.ts"
+    },
+    {
+      "src": "/api/users/(.*)",
+      "dest": "/api/users/[id].ts"
+    },
+    {
+      "src": "/api/users",
+      "dest": "/api/users.ts"
     },
     {
       "src": "/api",
