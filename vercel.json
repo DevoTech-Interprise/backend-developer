@@ -28,30 +28,28 @@
       "dest": "/api/refresh.ts"
     },
     {
-      "src": "/api/users/me",
+      "src": "/api/users-list",
+      "dest": "/api/users-list.ts"
+    },
+    {
+      "src": "/api/users-me",
       "dest": "/api/users-me.ts"
     },
     {
-      "src": "/api/users",
+      "src": "/api/users-get",
       "dest": "/api/users-get.ts"
     },
     {
-      "src": "/api/users/(.*)/promote",
+      "src": "/api/users-update",
+      "dest": "/api/users-update.ts"
+    },
+    {
+      "src": "/api/users-delete",
+      "dest": "/api/users-delete.ts"
+    },
+    {
+      "src": "/api/users-promote",
       "dest": "/api/users-promote.ts"
-    },
-    {
-      "src": "/api/users/(.*)",
-      "dest": "/api/users-id-get.ts"
-    },
-    {
-      "src": "/api/users/(.*)",
-      "dest": "/api/users-id-put.ts",
-      "methods": ["PUT"]
-    },
-    {
-      "src": "/api/users/(.*)",
-      "dest": "/api/users-id-delete.ts",
-      "methods": ["DELETE"]
     },
     {
       "src": "/api",
