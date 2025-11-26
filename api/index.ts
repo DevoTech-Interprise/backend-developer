@@ -40,15 +40,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  // Extrair path da URL
-  const url = req.url || '';
-  const method = req.method || 'GET';
-
-  console.log('🔍 Rota acessada:', { url, method });
+  // DEBUG: Log completo da requisição
+  console.log('🔍 DEBUG Request:', {
+    url: req.url,
+    method: req.method,
+    headers: req.headers,
+    query: req.query
+  });
 
   try {
     // ==================== HEALTH CHECK ====================
-    if (url === '/api' && method === 'GET') {
+    if ((req.url === '/api' || req.url === '/') && req.method === 'GET') {
       const dbConnected = await testConnection();
       return res.status(200).json({ 
         status: 'OK', 
@@ -62,46 +64,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ==================== AUTH ROUTES ====================
     
     // POST /api/auth/register
-    if (url === '/api/auth/register' && method === 'POST') {
+    if (req.url === '/api/auth/register' && req.method === 'POST') {
       return await AuthController.register(req as any, res as any);
     }
 
     // POST /api/auth/login
-    if (url === '/api/auth/login' && method === 'POST') {
+    if (req.url === '/api/auth/login' && req.method === 'POST') {
       return await AuthController.login(req as any, res as any);
     }
 
     // GET /api/auth/profile
-    if (url === '/api/auth/profile' && method === 'GET') {
+    if (req.url === '/api/auth/profile' && req.method === 'GET') {
       return await withAuth(AuthController.getProfile)(req, res);
     }
 
-    // ==================== NOVAS ROTAS AUTH ====================
+    // ==================== VERIFY & REFRESH ROUTES ====================
 
-    // GET /api/verify - Verificar token (PUBLIC - não precisa de auth no header)
-    if (url === '/api/verify' && method === 'GET') {
+    // GET /api/verify - Verificar token
+    if (req.url === '/api/verify' && req.method === 'GET') {
+      console.log('✅ Rota verify encontrada');
       return await AuthController.verifyToken(req as any, res as any);
     }
 
-    // POST /api/refresh - Refresh token (PUBLIC - precisa do token antigo)
-    if (url === '/api/refresh' && method === 'POST') {
+    // POST /api/refresh - Refresh token
+    if (req.url === '/api/refresh' && req.method === 'POST') {
+      console.log('✅ Rota refresh encontrada');
       return await AuthController.refreshToken(req as any, res as any);
     }
 
     // ==================== USER ROUTES ====================
 
     // GET /api/users (listar todos - apenas admin)
-    if (url === '/api/users' && method === 'GET') {
+    if (req.url === '/api/users' && req.method === 'GET') {
       return await withAuth(UserController.getAllUsers)(req, res);
     }
 
     // GET /api/users/me (meu perfil)
-    if (url === '/api/users/me' && method === 'GET') {
+    if (req.url === '/api/users/me' && req.method === 'GET') {
       return await withAuth(UserController.getMyProfile)(req, res);
     }
 
     // PUT /api/users/me (atualizar meu perfil)
-    if (url === '/api/users/me' && method === 'PUT') {
+    if (req.url === '/api/users/me' && req.method === 'PUT') {
       return withAuth(async (req: VercelRequest, res: VercelResponse) => {
         const userId = (req as any).user.userId;
         (req as any).params = { id: userId.toString() };
@@ -111,8 +115,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // GET /api/users/:id (buscar por ID)
-    if (url.startsWith('/api/users/') && method === 'GET') {
-      const id = url.split('/').pop(); // Pega o último segmento
+    if (req.url?.startsWith('/api/users/') && req.method === 'GET') {
+      const id = req.url.split('/').pop(); // Pega o último segmento
       if (!id || id === 'me') {
         return res.status(400).json({ error: 'ID do usuário não fornecido' });
       }
@@ -124,8 +128,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // PUT /api/users/:id (atualizar)
-    if (url.startsWith('/api/users/') && method === 'PUT') {
-      const id = url.split('/').pop(); // Pega o último segmento
+    if (req.url?.startsWith('/api/users/') && req.method === 'PUT') {
+      const id = req.url.split('/').pop(); // Pega o último segmento
       if (!id || id === 'me') {
         return res.status(400).json({ error: 'ID do usuário não fornecido' });
       }
@@ -138,8 +142,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // DELETE /api/users/:id (deletar)
-    if (url.startsWith('/api/users/') && method === 'DELETE') {
-      const id = url.split('/').pop(); // Pega o último segmento
+    if (req.url?.startsWith('/api/users/') && req.method === 'DELETE') {
+      const id = req.url.split('/').pop(); // Pega o último segmento
       if (!id) {
         return res.status(400).json({ error: 'ID do usuário não fornecido' });
       }
@@ -151,8 +155,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // PATCH /api/users/:id/promote (promover para admin)
-    if (url.includes('/promote') && method === 'PATCH') {
-      const pathParts = url.split('/');
+    if (req.url?.includes('/promote') && req.method === 'PATCH') {
+      const pathParts = req.url.split('/');
       const id = pathParts[pathParts.length - 2]; // Pega o ID antes de /promote
       
       if (!id) {
@@ -166,10 +170,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ==================== ROTA NÃO ENCONTRADA ====================
+    console.log('❌ Rota não encontrada:', req.url);
     return res.status(404).json({ 
       error: 'Rota não encontrada',
-      path: url,
-      method: method,
+      path: req.url,
+      method: req.method,
       available_routes: [
         'GET /api',
         'POST /api/auth/register',
