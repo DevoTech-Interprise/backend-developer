@@ -16,20 +16,28 @@ function formatToBrasilia(date: Date) {
 }
 
 export class UserController {
-  // GET /api/users - Listar todos os usuários (com paginação)
+  // GET /api/users - Listar todos os usuários (apenas admin)
   static async getAllUsers(req: Request, res: Response) {
     try {
+      const user = (req as any).user;
+      
+      // Apenas admin pode listar todos os usuários
+      if (user.role !== 'admin') {
+        return res.status(403).json({ 
+          error: 'Acesso negado',
+          details: 'Apenas administradores podem listar todos os usuários'
+        });
+      }
+
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = (page - 1) * limit;
 
-      // Query para contar total
       const countResult = await pool.query('SELECT COUNT(*) FROM users');
       const total = parseInt(countResult.rows[0].count);
 
-      // Query para buscar usuários
       const result = await pool.query(
-        `SELECT id, email, name, created_at, updated_at 
+        `SELECT id, email, name, role, created_at, updated_at 
          FROM users 
          ORDER BY created_at DESC 
          LIMIT $1 OFFSET $2`,
@@ -58,13 +66,26 @@ export class UserController {
     }
   }
 
-  // GET /api/users/:id - Obter usuário por ID
+  // GET /api/users/:id - Obter usuário por ID (próprio usuário ou admin)
   static async getUserById(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const user = (req as any).user;
+
+      const userIdNum = parseInt(id);
+      const isSelf = user.userId === userIdNum;
+      const isAdmin = user.role === 'admin';
+
+      // Apenas próprio usuário ou admin pode ver o perfil
+      if (!isSelf && !isAdmin) {
+        return res.status(403).json({ 
+          error: 'Acesso negado',
+          details: 'Você só pode ver seu próprio perfil'
+        });
+      }
 
       const result = await pool.query(
-        `SELECT id, email, name, created_at, updated_at 
+        `SELECT id, email, name, role, created_at, updated_at 
          FROM users 
          WHERE id = $1`,
         [id]
@@ -74,11 +95,11 @@ export class UserController {
         return res.status(404).json({ error: 'Usuário não encontrado' });
       }
 
-      const user = result.rows[0];
+      const userData = result.rows[0];
       const userResponse = {
-        ...user,
-        created_at: formatToBrasilia(user.created_at),
-        updated_at: user.updated_at ? formatToBrasilia(user.updated_at) : null
+        ...userData,
+        created_at: formatToBrasilia(userData.created_at),
+        updated_at: userData.updated_at ? formatToBrasilia(userData.updated_at) : null
       };
 
       res.json({ user: userResponse });
@@ -89,18 +110,18 @@ export class UserController {
     }
   }
 
-  // PUT /api/users/:id - Atualizar usuário
+  // PUT /api/users/:id - Atualizar usuário (próprio usuário ou admin)
   static async updateUser(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { name, email, password } = req.body;
-      const userId = (req as any).user.userId;
+      const { name, email, password, role } = req.body;
+      const user = (req as any).user;
 
-      console.log('🔍 Debug updateUser:', { id, userId, typeId: typeof id, typeUserId: typeof userId });
+      console.log('🔍 Debug updateUser:', { id, userId: user.userId, userRole: user.role });
 
       // Verificar se usuário existe
       const userExists = await pool.query(
-        'SELECT id FROM users WHERE id = $1',
+        'SELECT id, role FROM users WHERE id = $1',
         [id]
       );
 
@@ -108,17 +129,24 @@ export class UserController {
         return res.status(404).json({ error: 'Usuário não encontrado' });
       }
 
-      // CORREÇÃO: Converter ambos para número para comparação
-      const userIdNum = parseInt(userId);
-      const idNum = parseInt(id);
+      const targetUser = userExists.rows[0];
+      const userIdNum = parseInt(id);
+      const isSelf = user.userId === userIdNum;
+      const isAdmin = user.role === 'admin';
 
-      console.log('🔍 Debug após conversão:', { idNum, userIdNum });
-
-      // Verificar se o usuário tem permissão (só pode editar próprio perfil)
-      if (idNum !== userIdNum) {
+      // Apenas próprio usuário ou admin pode editar
+      if (!isSelf && !isAdmin) {
         return res.status(403).json({ 
-          error: 'Sem permissão para editar este usuário',
-          details: `Você só pode editar seu próprio perfil (ID: ${userIdNum})`
+          error: 'Acesso negado',
+          details: 'Você só pode editar seu próprio perfil'
+        });
+      }
+
+      // Apenas admin pode alterar role
+      if (role && !isAdmin) {
+        return res.status(403).json({ 
+          error: 'Acesso negado',
+          details: 'Apenas administradores podem alterar roles'
         });
       }
 
@@ -159,6 +187,15 @@ export class UserController {
         paramCount++;
       }
 
+      if (role && isAdmin) {
+        if (!['admin', 'user'].includes(role)) {
+          return res.status(400).json({ error: 'Role inválida. Use "admin" ou "user".' });
+        }
+        updateFields.push(`role = $${paramCount}`);
+        values.push(role);
+        paramCount++;
+      }
+
       if (updateFields.length === 0) {
         return res.status(400).json({ error: 'Nenhum campo fornecido para atualização' });
       }
@@ -173,16 +210,16 @@ export class UserController {
         UPDATE users 
         SET ${updateFields.join(', ')} 
         WHERE id = $${paramCount} 
-        RETURNING id, email, name, created_at, updated_at
+        RETURNING id, email, name, role, created_at, updated_at
       `;
 
       const result = await pool.query(query, values);
-      const user = result.rows[0];
+      const updatedUser = result.rows[0];
 
       const userResponse = {
-        ...user,
-        created_at: formatToBrasilia(user.created_at),
-        updated_at: user.updated_at ? formatToBrasilia(user.updated_at) : null
+        ...updatedUser,
+        created_at: formatToBrasilia(updatedUser.created_at),
+        updated_at: updatedUser.updated_at ? formatToBrasilia(updatedUser.updated_at) : null
       };
 
       res.json({
@@ -196,11 +233,11 @@ export class UserController {
     }
   }
 
-  // DELETE /api/users/:id - Deletar usuário
+  // DELETE /api/users/:id - Deletar usuário (apenas admin, e não pode se deletar)
   static async deleteUser(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const userId = (req as any).user.userId;
+      const user = (req as any).user;
 
       // Verificar se usuário existe
       const userExists = await pool.query(
@@ -212,15 +249,23 @@ export class UserController {
         return res.status(404).json({ error: 'Usuário não encontrado' });
       }
 
-      // CORREÇÃO: Converter ambos para número para comparação
-      const userIdNum = parseInt(userId);
-      const idNum = parseInt(id);
+      const userIdNum = parseInt(id);
+      const isSelf = user.userId === userIdNum;
+      const isAdmin = user.role === 'admin';
 
-      // Verificar se o usuário tem permissão (só pode deletar próprio perfil)
-      if (idNum !== userIdNum) {
+      // Usuário não pode se deletar
+      if (isSelf) {
         return res.status(403).json({ 
-          error: 'Sem permissão para deletar este usuário',
-          details: `Você só pode deletar seu próprio perfil (ID: ${userIdNum})`
+          error: 'Ação não permitida',
+          details: 'Você não pode deletar sua própria conta. Contate um administrador.'
+        });
+      }
+
+      // Apenas admin pode deletar outros usuários
+      if (!isAdmin) {
+        return res.status(403).json({ 
+          error: 'Acesso negado',
+          details: 'Apenas administradores podem deletar usuários'
         });
       }
 
@@ -238,12 +283,10 @@ export class UserController {
   static async getMyProfile(req: Request, res: Response) {
     try {
       const userId = (req as any).user.userId;
-
-      // CORREÇÃO: Garantir que o ID é tratado como número
       const userIdNum = parseInt(userId);
 
       const result = await pool.query(
-        `SELECT id, email, name, created_at, updated_at 
+        `SELECT id, email, name, role, created_at, updated_at 
          FROM users 
          WHERE id = $1`,
         [userIdNum]
@@ -264,6 +307,56 @@ export class UserController {
 
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  }
+
+  // NOVO: Promover usuário para admin (apenas admin)
+  static async promoteToAdmin(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const user = (req as any).user;
+
+      // Apenas admin pode promover outros usuários
+      if (user.role !== 'admin') {
+        return res.status(403).json({ 
+          error: 'Acesso negado',
+          details: 'Apenas administradores podem promover usuários'
+        });
+      }
+
+      // Verificar se usuário existe
+      const userExists = await pool.query(
+        'SELECT id, role FROM users WHERE id = $1',
+        [id]
+      );
+
+      if (userExists.rows.length === 0) {
+        return res.status(404).json({ error: 'Usuário não encontrado' });
+      }
+
+      const targetUser = userExists.rows[0];
+
+      // Não pode promover outro admin
+      if (targetUser.role === 'admin') {
+        return res.status(400).json({ error: 'Usuário já é administrador' });
+      }
+
+      // Promover para admin
+      const result = await pool.query(
+        'UPDATE users SET role = $1, updated_at = $2 WHERE id = $3 RETURNING id, email, name, role',
+        ['admin', new Date(), id]
+      );
+
+      const promotedUser = result.rows[0];
+
+      res.json({
+        message: 'Usuário promovido para administrador com sucesso',
+        user: promotedUser
+      });
+
+    } catch (error) {
+      console.error('Erro ao promover usuário:', error);
       res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
