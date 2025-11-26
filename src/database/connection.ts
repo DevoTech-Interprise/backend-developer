@@ -3,52 +3,40 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configuração específica para Neon.tech
+// Configuração OTIMIZADA para Neon com timezone Brasil
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // Neon requer SSL
   ssl: {
     rejectUnauthorized: false
   },
-  // Configurações otimizadas para Neon
-  max: 10,
+  max: 1,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
+  application_name: 'auth-api',
+  // Configurar timezone para Brasil
+  options: '-c timezone=America/Sao_Paulo'
 });
 
 export const testConnection = async () => {
   let client;
   try {
-    console.log('🔌 Tentando conectar com:', process.env.DATABASE_URL?.split('@')[1]?.split('/')[0]);
-    
+    console.log('🔌 Conectando ao Neon...');
     client = await pool.connect();
+    
     console.log('✅ Conectado ao Neon Postgres!');
     
-    // Teste específico para verificar tabelas
-    const tables = await client.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public'
-    `);
+    // Teste de query com timezone
+    const result = await client.query('SELECT NOW() as current_time, version() as pg_version');
+    console.log('⏰ Hora do servidor (BR):', result.rows[0].current_time);
+    console.log('🐘 PostgreSQL:', result.rows[0].pg_version.split(',')[0]);
     
-    console.log('📊 Tabelas encontradas:', tables.rows.map(t => t.table_name));
+    // Verificar timezone configurado
+    const timezoneResult = await client.query('SHOW timezone');
+    console.log('🌎 Timezone:', timezoneResult.rows[0].timezone);
     
     return true;
   } catch (error: any) {
-    console.error('❌ Erro detalhado:');
-    console.error('   Mensagem:', error.message);
-    console.error('   Código:', error.code);
-    
-    if (error.message.includes('SSL')) {
-      console.error('   💡 SSL não configurado');
-    }
-    if (error.message.includes('password')) {
-      console.error('   💡 Erro de autenticação');
-    }
-    if (error.message.includes('does not exist')) {
-      console.error('   💡 Banco não existe');
-    }
-    
+    console.error('❌ Erro de conexão:', error.message);
     return false;
   } finally {
     if (client) client.release();
