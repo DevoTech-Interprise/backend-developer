@@ -38,13 +38,13 @@ Uma API completa de autenticação e gerenciamento de usuários com sistema de r
 
 ## 🏗️ Estrutura do Projeto
 
-backend/
+backend/<br/>
 ├── src/ <br/>
-│ ├── controllers/ # Lógica das rotas
-│ ├── database/ # Conexão com PostgreSQL
-│ ├── middleware/ # Auth e permissions
-│ └── routes/ # Definição das rotas
-├── api/
-│ └── index.ts # Todas as rotas (Vercel)
-├── package.json
+│ ├── controllers/ # Lógica das rotas <br/>
+│ ├── database/ # Conexão com PostgreSQL <br/>
+│ ├── middleware/ # Auth e permissions <br/>
+│ └── routes/ # Definição das rotas <br/>
+├── api/ <br/>
+│ └── index.ts # Todas as rotas (Vercel) <br/>
+├── package.json <br/>
 └── vercel.json
