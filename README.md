@@ -37,3 +37,14 @@ Uma API completa de autenticação e gerenciamento de usuários com sistema de r
 - ✅ CORS configurado
 
 ## 🏗️ Estrutura do Projeto
+
+backend/
+├── src/
+│ ├── controllers/ # Lógica das rotas
+│ ├── database/ # Conexão com PostgreSQL
+│ ├── middleware/ # Auth e permissions
+│ └── routes/ # Definição das rotas
+├── api/
+│ └── index.ts # Todas as rotas (Vercel)
+├── package.json
+└── vercel.json
