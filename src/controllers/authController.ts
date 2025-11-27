@@ -29,15 +29,15 @@ export class AuthController {
 
       // Validações
       if (!email || !password || !name) {
-        return res.status(400).json({ message: 'Todos os campos são obrigatórios' });
+        return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
       }
 
       if (password.length < 6) {
-        return res.status(400).json({ message: 'Senha deve ter pelo menos 6 caracteres' });
+        return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
       }
 
       if (!email.includes('@')) {
-        return res.status(400).json({ message: 'Email inválido' });
+        return res.status(400).json({ error: 'Email inválido' });
       }
 
       // Verificar se usuário já existe
@@ -47,7 +47,7 @@ export class AuthController {
       );
 
       if (userExists.rows.length > 0) {
-        return res.status(400).json({ message: 'Usuário já existe' });
+        return res.status(400).json({ error: 'Usuário já existe' });
       }
 
       // Hash da senha
@@ -66,7 +66,7 @@ export class AuthController {
       // Verificar JWT_SECRET antes de gerar token
       if (!JWT_SECRET) {
         console.error('JWT_SECRET não configurada');
-        return res.status(500).json({ message: 'Erro de configuração do servidor' });
+        return res.status(500).json({ error: 'Erro de configuração do servidor' });
       }
 
       // Incluir role no token
@@ -100,10 +100,10 @@ export class AuthController {
       console.error('Erro no registro:', error);
       
       if (error.code === '23505') {
-        return res.status(400).json({ message: 'Email já está em uso' });
+        return res.status(400).json({ error: 'Email já está em uso' });
       }
       
-      return res.status(500).json({ message: 'Erro interno do servidor' });
+      return res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
 
@@ -112,13 +112,13 @@ export class AuthController {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        return res.status(400).json({ message: 'Email e senha são obrigatórios' });
+        return res.status(400).json({ error: 'Email e senha são obrigatórios' });
       }
 
       if (!JWT_SECRET) {
         console.error('❌ JWT_SECRET não configurada na Vercel');
         return res.status(500).json({ 
-          message: 'Erro de configuração do servidor',
+          error: 'Erro de configuração do servidor',
           details: 'JWT_SECRET não está definida'
         });
       }
@@ -130,7 +130,7 @@ export class AuthController {
       );
 
       if (result.rows.length === 0) {
-        return res.status(401).json({ message: 'Credenciais inválidas' });
+        return res.status(401).json({ error: 'Credenciais inválidas' });
       }
 
       const user = result.rows[0];
@@ -139,7 +139,7 @@ export class AuthController {
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
-        return res.status(401).json({ message: 'Credenciais inválidas' });
+        return res.status(401).json({ error: 'Credenciais inválidas' });
       }
 
       // Incluir role no token
@@ -170,14 +170,14 @@ export class AuthController {
 
     } catch (error) {
       console.error('Erro no login:', error);
-      return res.status(500).json({ message: 'Erro interno do servidor' });
+      return res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
 
   static async getProfile(req: Request, res: Response) {
     try {
       if (!JWT_SECRET) {
-        return res.status(500).json({ message: 'Erro de configuração do servidor' });
+        return res.status(500).json({ error: 'Erro de configuração do servidor' });
       }
 
       const userId = (req as any).user.userId;
@@ -189,7 +189,7 @@ export class AuthController {
       );
 
       if (result.rows.length === 0) {
-        return res.status(404).json({ message: 'Usuário não encontrado' });
+        return res.status(404).json({ error: 'Usuário não encontrado' });
       }
 
       const user = result.rows[0];
@@ -207,7 +207,7 @@ export class AuthController {
 
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
-      return res.status(500).json({ message: 'Erro interno do servidor' });
+      return res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
 
@@ -218,11 +218,11 @@ export class AuthController {
       const token = authHeader && authHeader.split(' ')[1];
 
       if (!token) {
-        return res.status(401).json({ message: 'Token de acesso necessário' });
+        return res.status(401).json({ error: 'Token de acesso necessário' });
       }
 
       if (!JWT_SECRET) {
-        return res.status(500).json({ message: 'Erro de configuração do servidor' });
+        return res.status(500).json({ error: 'Erro de configuração do servidor' });
       }
 
       const decoded = jwt.verify(token, JWT_SECRET) as any;
@@ -241,7 +241,7 @@ export class AuthController {
     } catch (error) {
       return res.status(403).json({ 
         valid: false,
-        message: 'Token inválido ou expirado' 
+        error: 'Token inválido ou expirado' 
       });
     }
   }
@@ -253,11 +253,11 @@ export class AuthController {
       const token = authHeader && authHeader.split(' ')[1];
 
       if (!token) {
-        return res.status(401).json({ message: 'Token de acesso necessário' });
+        return res.status(401).json({ error: 'Token de acesso necessário' });
       }
 
       if (!JWT_SECRET) {
-        return res.status(500).json({ message: 'Erro de configuração do servidor' });
+        return res.status(500).json({ error: 'Erro de configuração do servidor' });
       }
 
       // Verificar token atual
@@ -270,7 +270,7 @@ export class AuthController {
       );
 
       if (result.rows.length === 0) {
-        return res.status(404).json({ message: 'Usuário não encontrado' });
+        return res.status(404).json({ error: 'Usuário não encontrado' });
       }
 
       const user = result.rows[0];
@@ -291,7 +291,7 @@ export class AuthController {
       });
 
     } catch (error) {
-      return res.status(403).json({ message: 'Token inválido' });
+      return res.status(403).json({ error: 'Token inválido' });
     }
   }
 }
