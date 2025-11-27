@@ -96,7 +96,7 @@ export class AuthController {
         token
       });
 
-    } catch (message: any) {
+    } catch (error: any) {
       console.error('Erro no registro:', error);
       
       if (error.code === '23505') {
